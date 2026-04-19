@@ -1,26 +1,11 @@
 services:
 
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: kroos
-      POSTGRES_USER: kroos
-      POSTGRES_PASSWORD: secret
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./pg_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kroos"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   qdrant:
     image: qdrant/qdrant
     ports:
       - "6333:6333"
+    environment:
+      QDRANT__SERVICE__API_KEY: 1fkYHcY3m3Gjgu9c8Gsogun5zYf069Ldvt2R-lCbfT4
     volumes:
       - ./qdrant_storage:/qdrant/storage
     restart: unless-stopped
@@ -30,14 +15,10 @@ services:
     command: ["python", "main.py", "watch"]
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://kroos:secret@postgres:5432/kroos
       QDRANT_HOST: qdrant
       QDRANT_PORT: "6333"
     volumes:
       - ./data:/app/data
     depends_on:
-      postgres:
-        condition: service_healthy
-      qdrant:
-        condition: service_started
+      - qdrant
     restart: unless-stopped

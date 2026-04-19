@@ -5,9 +5,12 @@ from src.config import QDRANT_HOST, QDRANT_PORT, QDRANT_API_KEY
 VECTOR_SIZE = 1536  # text-embedding-3-small
 
 COLLECTIONS = [
-    "manufacturers_vs",
+    "catalogue_vs",
+    "fiche_technique_vs",
+    "request_vs",
     "quotes_vs",
-    "client_requests_vs",
+    "prices_vs",
+    "discount_vs",
 ]
 
 
@@ -16,6 +19,7 @@ def get_client() -> QdrantClient:
         host=QDRANT_HOST,
         port=QDRANT_PORT,
         api_key=QDRANT_API_KEY or None,
+        https=False,
     )
 
 

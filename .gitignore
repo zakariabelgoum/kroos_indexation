@@ -5,4 +5,4 @@ __pycache__/
 *.pyo
 qdrant_storage/
 pg_data/
-data/uploads/
+data/
