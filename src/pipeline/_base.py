@@ -1,6 +1,7 @@
 """Shared helpers for all index pipelines."""
 import hashlib
 import json
+from datetime import datetime
 from pathlib import Path
 
 from anthropic import Anthropic
@@ -13,7 +14,23 @@ from src.processing.chunker import chunk
 from src.processing.embedder import embed
 from src.vector.collections import upsert
 from src.classifier import classify_document, get_collection
-from src.config import DATA_DIR, ANTHROPIC_API_KEY
+from src.config import DATA_DIR, ANTHROPIC_API_KEY, REPORTS_DIR
+
+CLASSIFICATIONS_FILE = REPORTS_DIR / "classifications.json"
+
+
+def _load_classifications() -> list:
+    if CLASSIFICATIONS_FILE.exists():
+        return json.loads(CLASSIFICATIONS_FILE.read_text())
+    return []
+
+
+def _save_classification(record: dict):
+    REPORTS_DIR.mkdir(exist_ok=True)
+    entries = _load_classifications()
+    entries = [e for e in entries if e.get("filename") != record["filename"]]
+    entries.append(record)
+    CLASSIFICATIONS_FILE.write_text(json.dumps(entries, indent=2))
 
 SUPPORTED = {".pdf", ".xlsx", ".xls", ".csv", ".doc", ".docx"}
 
@@ -80,9 +97,28 @@ def index_directory(directory: Path, qdrant: QdrantClient):
 
         if collection is None:
             print(f"    Skipping (unknown category): {rel}")
+            _save_classification({
+                "filename":      rel,
+                "category":      category,
+                "confidence":    result.get("confidence", ""),
+                "reason":        result.get("reason", ""),
+                "classified_by": result.get("classified_by", ""),
+                "collection":    None,
+                "indexed_at":    datetime.utcnow().isoformat(),
+            })
             continue
 
         print(f"    → {category} ({result.get('confidence', '?')}) → {collection}")
+
+        _save_classification({
+            "filename":      rel,
+            "category":      category,
+            "confidence":    result.get("confidence", ""),
+            "reason":        result.get("reason", ""),
+            "classified_by": result.get("classified_by", ""),
+            "collection":    collection,
+            "indexed_at":    datetime.utcnow().isoformat(),
+        })
 
         if is_indexed(rel, collection, fhash):
             print(f"    Skipping (unchanged): {rel}")
