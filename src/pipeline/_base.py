@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+import tiktoken
 from anthropic import Anthropic
 from qdrant_client import QdrantClient
 
@@ -15,6 +16,12 @@ from src.processing.embedder import embed
 from src.vector.collections import upsert
 from src.classifier import classify_document, get_collection
 from src.config import DATA_DIR, ANTHROPIC_API_KEY, REPORTS_DIR
+
+_tokenizer = tiktoken.get_encoding("cl100k_base")
+
+
+def count_tokens(text: str) -> int:
+    return len(_tokenizer.encode(text)) if text else 0
 
 CLASSIFICATIONS_FILE = REPORTS_DIR / "classifications.json"
 
@@ -95,6 +102,9 @@ def index_directory(directory: Path, qdrant: QdrantClient):
         category = result.get("category", "unknown")
         collection = get_collection(category)
 
+        text = parse(path)
+        token_count = count_tokens(text)
+
         if collection is None:
             print(f"    Skipping (unknown category): {rel}")
             _save_classification({
@@ -104,6 +114,7 @@ def index_directory(directory: Path, qdrant: QdrantClient):
                 "reason":        result.get("reason", ""),
                 "classified_by": result.get("classified_by", ""),
                 "collection":    None,
+                "token_count":   token_count,
                 "indexed_at":    datetime.utcnow().isoformat(),
             })
             continue
@@ -117,6 +128,7 @@ def index_directory(directory: Path, qdrant: QdrantClient):
             "reason":        result.get("reason", ""),
             "classified_by": result.get("classified_by", ""),
             "collection":    collection,
+            "token_count":   token_count,
             "indexed_at":    datetime.utcnow().isoformat(),
         })
 
@@ -124,7 +136,6 @@ def index_directory(directory: Path, qdrant: QdrantClient):
             print(f"    Skipping (unchanged): {rel}")
             continue
 
-        text = parse(path)
         if not text.strip():
             print(f"    Warning: no text extracted from {rel}")
             continue

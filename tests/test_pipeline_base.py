@@ -2,7 +2,7 @@ import json
 import pytest
 from pathlib import Path
 from unittest.mock import patch
-from src.pipeline._base import file_hash, parse, is_indexed, mark_indexed
+from src.pipeline._base import file_hash, parse, is_indexed, mark_indexed, count_tokens
 
 
 # --- file_hash ---
@@ -73,6 +73,20 @@ def test_parse_routes_csv(tmp_path):
         result = parse(f)
     mock.assert_called_once_with(f)
     assert result == "csv text"
+
+
+# --- count_tokens ---
+
+def test_count_tokens_empty():
+    assert count_tokens("") == 0
+
+
+def test_count_tokens_returns_int():
+    assert isinstance(count_tokens("hello world"), int)
+
+
+def test_count_tokens_more_text_more_tokens():
+    assert count_tokens("hello world foo bar") > count_tokens("hello")
 
 
 # --- is_indexed / mark_indexed ---

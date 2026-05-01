@@ -12,6 +12,12 @@ def cmd_index():
     index_documents()
 
 
+def cmd_stats():
+    from src.monitoring.stats_agent import run
+    print("Generating statistics report …")
+    run()
+
+
 def cmd_watch():
     import time
     import schedule
@@ -26,6 +32,7 @@ def cmd_watch():
 COMMANDS = {
     "init":  cmd_init,
     "index": cmd_index,
+    "stats": cmd_stats,
     "watch": cmd_watch,
 }
 
@@ -34,8 +41,9 @@ if __name__ == "__main__":
     if command in COMMANDS:
         COMMANDS[command]()
     else:
-        print("Usage: python main.py [init|index|watch]")
+        print("Usage: python main.py [init|index|stats|watch]")
         print()
         print("  init   — create Qdrant collections if they don't exist")
         print("  index  — index all files in data/ into Qdrant")
+        print("  stats  — generate descriptive statistics from classifications")
         print("  watch  — index once then re-index every 30 minutes")
